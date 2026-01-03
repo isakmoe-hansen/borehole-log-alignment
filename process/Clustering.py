@@ -31,10 +31,8 @@ class KMeans:
                 if len(cluster_points) > 0:
                     new_centroids[i] = np.mean(cluster_points)
                 else:
-                    # Keep centroid if cluster is empty
                     new_centroids[i] = centroids[i]
 
-            # 4) Check convergence
             change = np.max(np.abs(centroids - new_centroids))
 
             centroids = new_centroids

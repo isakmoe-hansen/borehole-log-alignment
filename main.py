@@ -1,30 +1,45 @@
-from Processing.Loader import LASLoader
-from Processing.Cleaner import dfCleaner
-from Processing.Clustering import KMeans
-from Processing.Alignment import Zshift
+from pathlib import Path
 
-#DataLoader
-lasA = LASLoader("/Users/isakmh/Documents/PythonProjects/AlignBorehole/Data/CL1_DEN.LAS")
-lasB = LASLoader("/Users/isakmh/Documents/PythonProjects/AlignBorehole/Data/CL1_GR.LAS")
-dfA = lasA.raw_data()
-dfB = lasB.raw_data()
-
-#DataCleaner
-dfA_clean = dfCleaner(dfA)
-dfB_clean = dfCleaner(dfB)
-grA, zA = dfA_clean.cleaning()
-grB, zB = dfB_clean.cleaning()
-
-#CLustering
-clusterA = KMeans(grA, k = 5, max_iter = 100, tol = 10e-6)
-clusterB = KMeans(grB, k = 5, max_iter = 100, tol = 10e-6)
-labelsA, centroidsA = clusterA.clustering()
-labelsB, centroidsB = clusterB.clustering()
-
-#Alignment
-align = Zshift(zA, zB, labelsA, labelsB, centroidsA, centroidsB)
-prepared_data = align.quantize_gr()
+from process.Loader import LASLoader
+from process.Cleaner import dfCleaner
+from process.Clustering import KMeans
+from process.Alignment import Zshift
+from process.Plotter import LogPlotter
 
 
+def main():
+    base_dir = Path(__file__).resolve().parent
+
+    file_A = base_dir / "data" / "CL1_DEN.LAS"
+    file_B = base_dir / "data" / "CL1_GR.LAS"
+
+    loaderA = LASLoader(file_A)
+    loaderB = LASLoader(file_B)
+
+    dfA = loaderA.raw_data()
+    dfB = loaderB.raw_data()
+
+    cleanerA = dfCleaner(dfA)
+    cleanerB = dfCleaner(dfB)
+
+    zA, grA = cleanerA.cleaning()
+    zB, grB = cleanerB.cleaning()
+
+    clusterA = KMeans(grA, k=5, max_iter=100, tol=0.01)#
+    clusterB = KMeans(grB, k=5,max_iter=100, tol=0.01)#
+
+    labelsA, centroidsA = clusterA.clustering()
+    labelsB, centroidsB = clusterB.clustering()
+
+    aligner = Zshift(zA, zB, labelsA, labelsB, centroidsA, centroidsB)
+    
+    dz = aligner.calculate_shift()
+    zB_aligned = zB + dz
 
 
+    plotter = LogPlotter(zA, grA, zB, grB, zB_aligned, dz)
+    plotter.plot()
+
+
+if __name__ == "__main__":
+    main()
